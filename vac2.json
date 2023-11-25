@@ -1,0 +1,50 @@
+{
+    "727210460356673607": {
+        "Category1": {
+            "chan": 1177580054767730778,
+            "in_use": false,
+            "que": [
+                "ssdds  ",
+                "олег ",
+                "олег"
+            ]
+        },
+        "Category2": {
+            "chan": 1177580054767730778,
+            "in_use": false,
+            "que": [
+                "dsdsdsddd",
+                "ddd",
+                "dddd"
+            ]
+        },
+        "name": {
+            "in_use": false,
+            "chan": 1177666512253894736,
+            "que": [
+                "ffd",
+                "oleg"
+            ]
+        }
+    },
+    "616528546550120449": {
+        "Category1": {
+            "chan": 1177580054767730778,
+            "in_use": false,
+            "que": [
+                "ssdds  ",
+                "олег ",
+                "олег"
+            ]
+        },
+        "Category2": {
+            "chan": 1177580054767730778,
+            "in_use": false,
+            "que": [
+                "dsdsdsddd",
+                "ddd",
+                "dddd"
+            ]
+        }
+    }
+}
