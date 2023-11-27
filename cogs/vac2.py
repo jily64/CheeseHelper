@@ -7,11 +7,21 @@ import asyncio
 
 class var:
     bot = None
+    path = "test.json"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            pass
+    except:
+        with open(path, "w") as f:
+            f.write("{}")
     def __init__(self, bot):
         self.bot = bot
+        print("#[VacV2 Logs]: Loaded")
+        with open(self.path, "r", encoding="utf-8") as f:
+            self.data = json.load(f)
 
     async def load_messages(self):
-        with open("vac2.json", "r", encoding="utf-8") as f:
+        with open(self.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
         for i in self.data:
@@ -29,7 +39,7 @@ class var:
                             i = self.i
                             bot = self.bot
                             guild = channel.guild
-                            with open("vac2.json", "r", encoding="utf-8") as f:
+                            with open(var.path, "r", encoding="utf-8") as f:
                                 data = json.load(f)
 
                             @discord.ui.button(label="Ответить на вопросы",
@@ -77,13 +87,13 @@ class vac(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        with open("vac2.json", "r", encoding="utf-8") as f:
+        with open(var.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
         print("#[VacV2 Logs]: Loaded")
 
     @app_commands.command(name="vac-menu", description="New Version of Vac")
     async def vacancy_main(self, ctx:discord.Interaction):
-        with open("vac2.json", "r", encoding="utf-8") as f:
+        with open(var.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
         if str(ctx.user.id) in self.data:
                 emb = discord.Embed(title="Менеджер категорий", description="Добавление / Переименование / Удаление Категорий")
@@ -91,10 +101,12 @@ class vac(commands.Cog):
                     que = ""
                     for j in range(len(self.data[str(ctx.user.id)][i]["que"])):
                         que+=f'{j+1}. {self.data[str(ctx.user.id)][i]["que"][j]} \n'
+                    if len(que) >= 1000:
+                        break
                     emb.add_field(name=i, value=f"```{que}```", inline=False)
 
                 class select_category(discord.ui.View):
-                    with open("vac2.json", "r", encoding="utf-8") as f:
+                    with open(var.path, "r", encoding="utf-8") as f:
                         data = json.load(f)
                         opt=[]
                     if len(self.data[str(ctx.user.id)]) != 0:
@@ -121,13 +133,13 @@ class vac(commands.Cog):
                                             )
 
                                             async def on_submit(self, interaction: discord.Interaction):
-                                                with open('vac2.json', "r", encoding="utf-8") as f:
+                                                with open(var.path, "r", encoding="utf-8") as f:
                                                     self.data = json.load(f)
                                                 val = self.feedback.value
                                                 self.data[str(interaction.user.id)][val] = self.data[str(interaction.user.id)][select.values[0]]
                                                 self.data[str(interaction.user.id)].pop(select.values[0])
                                                 select.values[0] = val
-                                                with open("vac2.json", "w", encoding="utf-8") as f:
+                                                with open(var.path, "w", encoding="utf-8") as f:
                                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                 await interaction.response.send_message("Изменения приняты", ephemeral=True)
 
@@ -136,7 +148,7 @@ class vac(commands.Cog):
                                     @discord.ui.button(label="Изменить описание", style=discord.ButtonStyle.blurple)
                                     async def new_desc_callback(self, interaction:discord.Interaction, button):
                                         class rename_modal(discord.ui.Modal, title="Изменение описания категории"):
-                                            with open("vac2.json", "r", encoding="utf-8") as f:
+                                            with open(var.path, "r", encoding="utf-8") as f:
                                                 data = json.load(f)
                                             feedback = discord.ui.TextInput(
                                                 label='Описание категории',
@@ -148,11 +160,11 @@ class vac(commands.Cog):
                                             )
 
                                             async def on_submit(self, interaction: discord.Interaction):
-                                                with open('vac2.json', "r", encoding="utf-8") as f:
+                                                with open(var.path, "r", encoding="utf-8") as f:
                                                     self.data = json.load(f)
                                                 val = self.feedback.value
                                                 self.data[str(interaction.user.id)][select.values[0]]["description"] = val
-                                                with open("vac2.json", "w", encoding="utf-8") as f:
+                                                with open(var.path, "w", encoding="utf-8") as f:
                                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                 await interaction.response.send_message("Изменения приняты", ephemeral=True)
 
@@ -171,12 +183,12 @@ class vac(commands.Cog):
 
                                             async def on_submit(self, interaction:discord.Interaction):
                                                 if self.con.value == select.values[0]:
-                                                    with open("vac2.json", "r", encoding="utf-8") as f:
+                                                    with open(var.path, "r", encoding="utf-8") as f:
                                                         self.data = json.load(f)
 
                                                     self.data[str(interaction.user.id)].pop(self.con.value)
 
-                                                    with open("vac2.json", "w", encoding="utf-8") as f:
+                                                    with open(var.path, "w", encoding="utf-8") as f:
                                                         json.dump(self.data, f, ensure_ascii=False, indent=4)
 
                                                     await interaction.response.send_message("Категория удалена", ephemeral=True)
@@ -188,7 +200,7 @@ class vac(commands.Cog):
                                     async def change_que_callback(self, interaction: discord.Interaction,
                                                                   button: discord.ui.Button):
                                         class Feedback(discord.ui.Modal, title=f'Настройка вопросов для {select.values[0]}'):
-                                            with open("vac2.json", "r", encoding="utf-8") as f:
+                                            with open(var.path, "r", encoding="utf-8") as f:
                                                 data = json.load(f)
                                             que = ""
                                             for i in range(len(data[str(ctx.user.id)][select.values[0]]["que"])):
@@ -204,7 +216,7 @@ class vac(commands.Cog):
                                             )
 
                                             async def on_submit(self, interaction: discord.Interaction):
-                                                with open('vac2.json', "r", encoding="utf-8") as f:
+                                                with open(var.path, "r", encoding="utf-8") as f:
                                                     self.data = json.load(f)
                                                 val = self.feedback.value
                                                 val = val.split("\n")
@@ -215,7 +227,7 @@ class vac(commands.Cog):
                                                 self.data[str(interaction.user.id)][select.values[0]]["que"] = val
                                                 print(val)
 
-                                                with open('vac2.json', "w", encoding='utf-8') as f:
+                                                with open(var.path, "w", encoding='utf-8') as f:
                                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                 await interaction.response.send_message("Успешно изменено", ephemeral=True)
 
@@ -229,10 +241,10 @@ class vac(commands.Cog):
                                     @discord.ui.button(label=name, style=discord.ButtonStyle.green)
                                     async def use_switch_callback(self, interaction: discord.Interaction,
                                                                   button: discord.ui.Button):
-                                        with open("vac2.json", "r", encoding="utf-8") as f:
+                                        with open(var.path, "r", encoding="utf-8") as f:
                                             self.data = json.load(f)
                                         self.data[str(interaction.user.id)][select.values[0]]["in_use"] = not self.data[str(interaction.user.id)][select.values[0]]["in_use"]
-                                        with open("vac2.json", "w", encoding="utf-8") as f:
+                                        with open(var.path, "w", encoding="utf-8") as f:
                                             json.dump(self.data, f, ensure_ascii=False, indent=4)
                                         await interaction.response.send_message("Изменения приняты!", ephemeral=True)
 
@@ -250,14 +262,14 @@ class vac(commands.Cog):
                                                 )
                                                 async def on_submit(self, interaction:discord.Interaction):
                                                     val = int(self.chan.value)
-                                                    with open("vac2.json", "r", encoding="utf-8") as f:
+                                                    with open(var.path, "r", encoding="utf-8") as f:
                                                         self.data = json.load(f)
 
                                                     guild = interaction.guild
                                                     chan = guild.get_channel(val)
                                                     if chan != None:
                                                         self.data[str(interaction.user.id)][select.values[0]]["chan"] = int(val)
-                                                        with open("vac2.json", "w", encoding="utf-8") as f:
+                                                        with open(var.path, "w", encoding="utf-8") as f:
                                                             json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                         await interaction.response.send_message("Канал успешно изменен",
                                                                                                 ephemeral=True)
@@ -266,7 +278,7 @@ class vac(commands.Cog):
                                                         print(chan)
                                                         if chan != None:
                                                             self.data[str(interaction.user.id)][select.values[0]]["chan"] = int(val)
-                                                            with open("vac2.json", "w", encoding="utf-8") as f:
+                                                            with open(var.path, "w", encoding="utf-8") as f:
                                                                 json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                             await interaction.response.send_message("Канал успешно изменен",
                                                                                                     ephemeral=True)
@@ -278,14 +290,14 @@ class vac(commands.Cog):
                                     @discord.ui.button(label="Респавн сообщения", style=discord.ButtonStyle.red)
                                     async def reset_category_channel(self, interaction: discord.Interaction, button):
                                             bot = var.bot
-                                            with open("vac2.json", "r", encoding="utf-8") as f:
+                                            with open(var.path, "r", encoding="utf-8") as f:
                                                 self.data = json.load(f)
 
                                             guild = interaction.guild
                                             channel = guild.get_channel(self.data[str(interaction.user.id)][select.values[0]]["chan"])
 
                                             class start_questionary(discord.ui.View):
-                                                with open("vac2.json", "r", encoding="utf-8") as f:
+                                                with open(var.path, "r", encoding="utf-8") as f:
                                                     data = json.load(f)
                                                 bot = var.bot
 
@@ -346,7 +358,7 @@ class vac(commands.Cog):
                                                     self.data[str(interaction.user.id)][select.values[0]]["mess"] = mes.id
                                                 else:
                                                     await mes.edit(content="", embed=emb, view=start_questionary())
-                                                with open("vac2.json", "w", encoding="utf-8") as f:
+                                                with open(var.path, "w", encoding="utf-8") as f:
                                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                 await interaction.response.send_message("Сообщение перезапущенно!",ephemeral=True)
 
@@ -363,7 +375,7 @@ class vac(commands.Cog):
                                                         self.data[str(interaction.user.id)][select.values[0]]["mess"] = mes.id
                                                     else:
                                                         await mes.edit(content="", embed=emb)
-                                                    with open("vac2.json", "w", encoding="utf-8") as f:
+                                                    with open(var.path, "w", encoding="utf-8") as f:
                                                         json.dump(self.data, f, ensure_ascii=False, indent=4)
                                                     await interaction.response.send_message("Сообщение перезапущенно!", ephemeral=True)
                                                 else:
@@ -371,8 +383,8 @@ class vac(commands.Cog):
                                                         "Канал не указан или указан неверно. Укажите его в настройках категории по команде /nt \nThread checker")
 
 
-
-                            await interaction.response.send_message(select.values[0], view=manage_buttons(), ephemeral=True)
+                            emb = discord.Embed(title=f"Настройка категории {select.values[0]}")
+                            await interaction.response.send_message(embed=emb, view=manage_buttons(), ephemeral=True)
 
                     @discord.ui.button(label="Создать категорию", style=discord.ButtonStyle.blurple)
                     async def create_category_callback(self, interaction: discord.Interaction, button):
@@ -416,13 +428,13 @@ class vac(commands.Cog):
 
                                 new_cat["que"] = val
 
-                                with open("vac2.json", "r", encoding="utf-8") as f:
+                                with open(var.path, "r", encoding="utf-8") as f:
                                     self.data = json.load(f)
                                 self.data[str(interaction.user.id)][name] = new_cat
-                                with open("vac2.json", "w", encoding="utf-8") as f:
+                                with open(var.path, "w", encoding="utf-8") as f:
                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
 
-                                await interaction.response.send_message(f"Изменения приняты! \n\nDebug\nname={name}\n\n```{new_cat}```")
+                                await interaction.response.send_message(f"Категория создана!", ephemeral=True)
                         await interaction.response.send_modal(create_category_modal())
 
 
