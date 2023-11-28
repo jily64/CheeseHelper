@@ -91,6 +91,69 @@ class vac(commands.Cog):
             self.data = json.load(f)
         print("#[VacV2 Logs]: Loaded")
 
+    @app_commands.command(name="vac-users", description="Настроте пользователей, которые могут пользоваться Vac2")
+    async def vac_users(self, ctx:discord.Interaction):
+
+                class view(discord.ui.View):
+                    @discord.ui.button(label="Добавить пользователя", style=discord.ButtonStyle.blurple)
+                    async def add_callback(self, interaction: discord.Interaction, button):
+                        class id_modal(discord.ui.Modal, title="Вставьте ID ользователя"):
+                            user_id = discord.ui.TextInput(
+                                label="ID",
+                                placeholder="",
+                                style=discord.TextStyle.short
+                            )
+
+                            async def on_submit(self, interaction: discord.Interaction):
+                                with open(var.path, "r", encoding="utf-8") as f:
+                                    self.data = json.load(f)
+                                if self.user_id.value in self.data:
+                                    await interaction.response.send_message("Данный пользователь уже есть в базе данных", ephemeral=True)
+                                else:
+                                    self.data[str(self.user_id.value)] = {}
+                                    with open(var.path, "w") as f:
+                                        json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                    await interaction.response.send_message("Пользователь занесен в базу данных", ephemeral=True)
+
+                        await interaction.response.send_modal(id_modal())
+
+                    @discord.ui.button(label="Удалить пользователя", style=discord.ButtonStyle.red)
+                    async def delete_callback(self, interaction:discord.Interaction, button):
+                        class id_modal(discord.ui.Modal, title="Вставьте ID ользователя"):
+                            user_id = discord.ui.TextInput(
+                                label="ID",
+                                placeholder="",
+                                style=discord.TextStyle.short
+                            )
+
+                            async def on_submit(self, interaction: discord.Interaction):
+                                with open(var.path, "r", encoding="utf-8") as f:
+                                    self.data = json.load(f)
+                                if self.user_id.value in self.data:
+                                    self.data.pop(str(self.user_id.value))
+                                    with open(var.path, "w") as f:
+                                        json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                    await interaction.response.send_message("Пользователь удален", ephemeral=True)
+                                else:
+                                    await interaction.response.send_message("Нет такого пользователя", ephemeral=True)
+
+                        await interaction.response.send_modal(id_modal())
+
+
+                if ctx.user.guild_permissions.administrator:
+                    emb = discord.Embed(title="Менеджер пользователей")
+                    with open(var.path, "r", encoding="utf-8") as f:
+                        self.data = json.load(f)
+                    users = "```\n"
+                    for i in self.data:
+                        users+=f"{i} \n"
+                    users+="```"
+                    emb.add_field(name="Доступные пользователи:", value=users)
+                    await ctx.response.send_message(embed=emb, view=view(), ephemeral=True)
+
+                else:
+                    await ctx.response.send_message("У вас нет прав администратора на данном сервере")
+
     @app_commands.command(name="vac-menu", description="New Version of Vac")
     async def vacancy_main(self, ctx:discord.Interaction):
         with open(var.path, "r", encoding="utf-8") as f:
@@ -313,6 +376,8 @@ class vac(commands.Cog):
                                                 async def start_button_callback(self, interaction: discord.Interaction,
                                                                                 button:discord.Button):
                                                     user_answers = []
+                                                    with open(var.path, "r", encoding='utf-8') as f:
+                                                        self.data = json.load(f)
                                                     for i in range(len(self.data[str(interaction.user.id)][select.values[0]]["que"])):
                                                         try:
                                                             await interaction.user.send(self.data[str(interaction.user.id)][select.values[0]]["que"][i])
@@ -441,7 +506,7 @@ class vac(commands.Cog):
 
                 await ctx.response.send_message(embed=emb, ephemeral=True, view=select_category())
         else:
-            await ctx.response.send_message("У вас нет роли шефа. Если вы шеф, обратитесь к сисам")
+            await ctx.response.send_message("У вас нет роли шефа. Если вы шеф, обратитесь к сисам", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(vac(bot), guilds=bot.guilds)
