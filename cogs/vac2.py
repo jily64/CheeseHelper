@@ -60,7 +60,14 @@ class var:
                                     try:
                                         response = await self.bot.wait_for('message', check=lambda
                                             m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=300)
-                                        user_answers.append(response.content)
+
+                                        if response.content:
+                                            print(response.content, "content")
+                                            user_answers.append(response.content)
+                                        else:
+                                            await interaction.user.send(f"Файлы, голосовые и картинки не принимаются. \nТеперь перепроходи все заново)")
+                                            return
+
                                     except asyncio.TimeoutError:
                                         await interaction.user.send(f"Время на вопрос вышло.")
                                         return
@@ -72,15 +79,24 @@ class var:
                                 # print(user_answers)
 
                                 ans = ""
+                                out_chan = user
 
-                                for g in range(len(user_answers)):
-                                    ans += f"{g + 1}. {self.data[str(self.i)][j]['que'][g]} ```{user_answers[g]}``` \n"
+                                out_chan = interaction.guild.get_channel(self.data[dats[0]][dats[1]]["out_chan"])
+                                if out_chan == None:
+                                    print("Th")
+                                    out_chan = interaction.guild.get_thread(self.data[dats[0]][dats[1]]["out_chan"])
+                                    if out_chan == None:
+                                        out_chan = user
+
+                                for i in range(len(user_answers)):
+                                    ans += f"{i + 1}. {self.data[dats[0]][dats[1]]['que'][i]} ```{user_answers[i]}``` \n"
                                 embed = discord.Embed(title='', description="", color=16762880)
-                                embed.description+=f"## Пришла новая заявка! \n"
-                                embed.description+=f"Пользователь: {interaction.user.mention} \n"
-                                embed.description+=f"Категория: `{dats[1]}` \n{ans}"
-                                embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
-                                await user.send(embed=embed)
+                                embed.description += f"## Пришла новая заявка! \n"
+                                embed.description += f"Пользователь: {interaction.user.mention} \n"
+                                embed.description += f"Категория: `{dats[1]}` \n{ans}"
+                                embed.set_author(name=interaction.user.display_name,
+                                                 icon_url=interaction.user.avatar.url)
+                                await out_chan.send(embed=embed)
 
                         emb = discord.Embed(title=f"{j}", description=self.data[str(i)][j]["description"])
                         await mess.edit(embed=emb, view=start_questionary())
@@ -118,7 +134,7 @@ class vac(commands.Cog):
                             await interaction.response.send_message("Данный пользователь уже есть в базе данных", ephemeral=True)
                         else:
                             self.data[str(self.user_id.value)] = {}
-                            with open(var.path, "w") as f:
+                            with open(var.path, "w", encoding="utf-8") as f:
                                 json.dump(self.data, f, ensure_ascii=False, indent=4)
                             await interaction.response.send_message("Пользователь занесен в базу данных", ephemeral=True)
 
@@ -138,7 +154,7 @@ class vac(commands.Cog):
                             self.data = json.load(f)
                         if self.user_id.value in self.data:
                             self.data.pop(str(self.user_id.value))
-                            with open(var.path, "w") as f:
+                            with open(var.path, "w", encoding="utf-8") as f:
                                 json.dump(self.data, f, ensure_ascii=False, indent=4)
                             await interaction.response.send_message("Пользователь удален", ephemeral=True)
                         else:
@@ -151,10 +167,10 @@ class vac(commands.Cog):
             emb = discord.Embed(title="Менеджер пользователей")
             with open(var.path, "r", encoding="utf-8") as f:
                 self.data = json.load(f)
-            users = "```\n"
+            users = "\n"
             for i in self.data:
-                users+=f"{i} \n"
-            users+="```"
+                user = self.bot.get_user(int(i))
+                users+=f"{user.mention} \n"
             emb.add_field(name="Доступные пользователи:", value=users)
             await ctx.response.send_message(embed=emb, view=view(), ephemeral=True)
 
@@ -319,22 +335,33 @@ class vac(commands.Cog):
                                 await interaction.response.send_message("Изменения приняты!", ephemeral=True)
 
                             @discord.ui.button(label="Назначить канал")
-                            async def set_category_channel(self, interaction:discord.Interaction, button):
+                            async def set_category_channel(self, interaction: discord.Interaction, button):
 
-                                    class set_category_channel_modal(discord.ui.Modal, title="Назначение канала для категории"):
-                                        chan = discord.ui.TextInput(
-                                            label="ID Канала",
-                                            placeholder="ID",
-                                            required=True,
-                                            style=discord.TextStyle.short
-                                        )
-                                        async def on_submit(self, interaction:discord.Interaction):
-                                            val = int(self.chan.value)
-                                            with open(var.path, "r", encoding="utf-8") as f:
-                                                self.data = json.load(f)
+                                class set_category_channel_modal(discord.ui.Modal,
+                                                                 title="Назначение канала для категории"):
+                                    chan = discord.ui.TextInput(
+                                        label="ID Канала",
+                                        placeholder="ID",
+                                        required=True,
+                                        style=discord.TextStyle.short
+                                    )
 
-                                            guild = interaction.guild
-                                            chan = guild.get_channel(val)
+                                    async def on_submit(self, interaction: discord.Interaction):
+                                        val = int(self.chan.value)
+                                        with open(var.path, "r", encoding="utf-8") as f:
+                                            self.data = json.load(f)
+
+                                        guild = interaction.guild
+                                        chan = guild.get_channel(val)
+                                        if chan != None:
+                                            self.data[str(interaction.user.id)][select.values[0]]["chan"] = int(val)
+                                            with open(var.path, "w", encoding="utf-8") as f:
+                                                json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                            await interaction.response.send_message("Канал успешно изменен",
+                                                                                    ephemeral=True)
+                                        else:
+                                            chan = guild.get_thread(val)
+                                            print(chan)
                                             if chan != None:
                                                 self.data[str(interaction.user.id)][select.values[0]]["chan"] = int(val)
                                                 with open(var.path, "w", encoding="utf-8") as f:
@@ -342,18 +369,50 @@ class vac(commands.Cog):
                                                 await interaction.response.send_message("Канал успешно изменен",
                                                                                         ephemeral=True)
                                             else:
-                                                chan = guild.get_thread(val)
-                                                print(chan)
-                                                if chan != None:
-                                                    self.data[str(interaction.user.id)][select.values[0]]["chan"] = int(val)
-                                                    with open(var.path, "w", encoding="utf-8") as f:
-                                                        json.dump(self.data, f, ensure_ascii=False, indent=4)
-                                                    await interaction.response.send_message("Канал успешно изменен",
-                                                                                            ephemeral=True)
-                                                else:
-                                                    await interaction.response.send_message("Канал не найден",
-                                                                                            ephemeral=True)
-                                    await interaction.response.send_modal(set_category_channel_modal())
+                                                await interaction.response.send_message("Канал не найден",
+                                                                                        ephemeral=True)
+
+                                await interaction.response.send_modal(set_category_channel_modal())
+
+                            @discord.ui.button(label="Назначить канал для вывода заявок")
+                            async def set_out_category_channel(self, interaction: discord.Interaction, button):
+
+                                class set_category_channel_modal(discord.ui.Modal,
+                                                                 title="Назначение канала для заявок"):
+                                    chan = discord.ui.TextInput(
+                                        label="ID Канала",
+                                        placeholder="ID",
+                                        required=True,
+                                        style=discord.TextStyle.short
+                                    )
+
+                                    async def on_submit(self, interaction: discord.Interaction):
+                                        val = int(self.chan.value)
+                                        with open(var.path, "r", encoding="utf-8") as f:
+                                            self.data = json.load(f)
+
+                                        guild = interaction.guild
+                                        chan = guild.get_channel(val)
+                                        if chan != None:
+                                            self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = int(val)
+                                            with open(var.path, "w", encoding="utf-8") as f:
+                                                json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                            await interaction.response.send_message("Канал успешно изменен (Ch)",
+                                                                                    ephemeral=True)
+                                        else:
+                                            chan = guild.get_thread(val)
+                                            print(chan)
+                                            if chan != None:
+                                                self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = int(val)
+                                                with open(var.path, "w", encoding="utf-8") as f:
+                                                    json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                                await interaction.response.send_message("Канал успешно изменен (Th)",
+                                                                                        ephemeral=True)
+                                            else:
+                                                await interaction.response.send_message("Канал не найден",
+                                                                                        ephemeral=True)
+
+                                await interaction.response.send_modal(set_category_channel_modal())
 
                             @discord.ui.button(label="Респавн сообщения", style=discord.ButtonStyle.red)
                             async def reset_category_channel(self, interaction: discord.Interaction, button):
@@ -395,11 +454,15 @@ class vac(commands.Cog):
                                             try:
                                                 response = await bot.wait_for('message', check=lambda
                                                     m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=300)
-                                                user_answers.append(response.content)
-                                                if len(str(response.content)) == 0:
+
+                                                if response.content:
+                                                    print(response.content, "content")
+                                                    user_answers.append(response.content)
+                                                else:
                                                     await interaction.user.send(
-                                                        "У вас пустое сообщение. Если ваше сообщение голосовое или содержит файлы, то к сожалению мы их не принимвем.")
-                                                    break
+                                                        f"Файлы, голосовые и картинки не принимаются. \nТеперь перепроходи все заново)")
+                                                    return
+
                                             except asyncio.TimeoutError:
                                                 await interaction.user.send(f"Время на вопрос вышло.")
                                                 return
@@ -412,6 +475,18 @@ class vac(commands.Cog):
 
                                         ans = ""
 
+                                        out_chan = user
+
+
+                                        out_chan = interaction.guild.get_channel(self.data[dats[0]][dats[1]]["out_chan"])
+                                        if out_chan == None:
+                                            print("Th")
+                                            out_chan = interaction.guild.get_thread(self.data[dats[0]][dats[1]]["out_chan"])
+                                            if out_chan == None:
+                                                out_chan = user
+
+
+
                                         for i in range(len(user_answers)):
                                             ans+=f"{i+1}. {self.data[dats[0]][dats[1]]['que'][i]} ```{user_answers[i]}``` \n"
                                         embed = discord.Embed(title='', description="", color=16762880)
@@ -419,7 +494,7 @@ class vac(commands.Cog):
                                         embed.description+=f"Пользователь: {interaction.user.mention} \n"
                                         embed.description+=f"Категория: `{dats[1]}` \n{ans}"
                                         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
-                                        await user.send(embed=embed)
+                                        await out_chan.send(embed=embed)
 
                                 emb = discord.Embed(title=f"{select.values[0]}", description=self.data[str(interaction.user.id)][select.values[0]]["description"])
                                 if channel != None:
