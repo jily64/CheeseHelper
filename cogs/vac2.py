@@ -390,27 +390,37 @@ class vac(commands.Cog):
                                         val = int(self.chan.value)
                                         with open(var.path, "r", encoding="utf-8") as f:
                                             self.data = json.load(f)
+                                        if val == 0:
+                                            self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = None
 
-                                        guild = interaction.guild
-                                        chan = guild.get_channel(val)
-                                        if chan != None:
-                                            self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = int(val)
+                                            await interaction.response.send_message("Теперь заявки будут приходить вам в ЛС.", ephemeral=True)
+
                                             with open(var.path, "w", encoding="utf-8") as f:
                                                 json.dump(self.data, f, ensure_ascii=False, indent=4)
-                                            await interaction.response.send_message("Канал успешно изменен (Ch)",
-                                                                                    ephemeral=True)
+
+                                            return
+
                                         else:
-                                            chan = guild.get_thread(val)
-                                            print(chan)
+                                            guild = interaction.guild
+                                            chan = guild.get_channel(val)
                                             if chan != None:
                                                 self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = int(val)
                                                 with open(var.path, "w", encoding="utf-8") as f:
                                                     json.dump(self.data, f, ensure_ascii=False, indent=4)
-                                                await interaction.response.send_message("Канал успешно изменен (Th)",
+                                                await interaction.response.send_message("Канал успешно изменен (Ch)",
                                                                                         ephemeral=True)
                                             else:
-                                                await interaction.response.send_message("Канал не найден",
-                                                                                        ephemeral=True)
+                                                chan = guild.get_thread(val)
+                                                print(chan)
+                                                if chan != None:
+                                                    self.data[str(interaction.user.id)][select.values[0]]["out_chan"] = int(val)
+                                                    with open(var.path, "w", encoding="utf-8") as f:
+                                                        json.dump(self.data, f, ensure_ascii=False, indent=4)
+                                                    await interaction.response.send_message("Канал успешно изменен (Th)",
+                                                                                            ephemeral=True)
+                                                else:
+                                                    await interaction.response.send_message("Канал не найден",
+                                                                                            ephemeral=True)
 
                                 await interaction.response.send_modal(set_category_channel_modal())
 
