@@ -16,7 +16,7 @@ class var:
             f.write("{}")
     def __init__(self, bot):
         self.bot = bot
-        print("#[VacV2 Logs]: Loaded")
+        # print("#[VacV2 Logs]: Loaded")
         with open(self.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
@@ -47,7 +47,8 @@ class var:
                                                custom_id=f"{i}<!>{j}",
                                                disabled=not data[str(self.i)][j]["in_use"])
                             async def start_button_callback(self, interaction: discord.Interaction, button: discord.Button):
-                                await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
+                                pass
+                                """await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
 
                                 user_answers = []
                                 dats = button.custom_id.split("<!>")
@@ -96,7 +97,7 @@ class var:
                                 embed.description += f"Категория: `{dats[1]}` \n{ans}"
                                 embed.set_author(name=interaction.user.display_name,
                                                  icon_url=interaction.user.avatar.url)
-                                await out_chan.send(embed=embed)
+                                await out_chan.send(embed=embed)"""
 
                         emb = discord.Embed(title=f"{j}", description=self.data[str(i)][j]["description"])
                         await mess.edit(embed=emb, view=start_questionary())
@@ -105,9 +106,80 @@ class vac(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        var.bot = self.bot
         with open(var.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
-    
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        if interaction.type != discord.InteractionType.component:
+            return
+
+        c_id = interaction.data["custom_id"]
+
+        if "<!>" in c_id:
+            await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
+
+            user_answers = []
+            dats = c_id.split('<!>')
+
+            with open(var.path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            for g in range(len(data[str(dats[0])][dats[1]]["que"])):
+                try:
+                    await interaction.user.send(data[dats[0]][dats[1]]["que"][g])
+                except:
+                    await interaction.edit_original_response(
+                        content="У вас закрыт лс. Откройте его, чтобы получить список вопросов.")
+                    break
+                try:
+                    response = await self.bot.wait_for('message', check=lambda
+                        m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=300)
+
+                    if response.content:
+                        print(response.content, "content")
+                        user_answers.append(response.content)
+                    else:
+                        await interaction.user.send(
+                            f"Файлы, голосовые и картинки не принимаются. \nТеперь перепроходи все заново)")
+                        return
+
+                except asyncio.TimeoutError:
+                    await interaction.user.send(f"Время на вопрос вышло.")
+                    return
+
+            await interaction.user.send(f"Спасибо за подачу заявки! В скором времени она будет рассмотрена.")
+
+            user = interaction.guild.get_member(int(dats[0]))
+            # print(user_answers)
+
+            ans = ""
+            out_chan = user
+            try:
+                if data[dats[0]][dats[1]]["out_chan"] != None:
+                    out_chan = interaction.guild.get_channel(data[dats[0]][dats[1]]["out_chan"])
+                    if out_chan == None:
+                        print("Th")
+                        out_chan = interaction.guild.get_thread(data[dats[0]][dats[1]]["out_chan"])
+                else:
+                    out_chan = user
+
+
+            except Exception as e:
+                out_chan = user
+                print(e)
+
+            for i in range(len(user_answers)):
+                ans += f"{i + 1}. {data[dats[0]][dats[1]]['que'][i]} ```{user_answers[i]}``` \n"
+            embed = discord.Embed(title='', description="", color=16762880)
+            embed.description += f"## Пришла новая заявка! \n"
+            embed.description += f"Пользователь: {interaction.user.mention} \n"
+            embed.description += f"Категория: `{dats[1]}` \n{ans}"
+            embed.set_author(name=interaction.user.display_name,
+                             icon_url=interaction.user.avatar.url)
+            await out_chan.send(embed=embed)
+
     @commands.Cog.listener()
     async def on_ready(self):
         var.bot = self.bot
@@ -424,7 +496,7 @@ class vac(commands.Cog):
 
                                 await interaction.response.send_modal(set_category_channel_modal())
 
-                            @discord.ui.button(label="Респавн сообщения", style=discord.ButtonStyle.red)
+                            @discord.ui.button(label="Применить изменения", style=discord.ButtonStyle.green)
                             async def reset_category_channel(self, interaction: discord.Interaction, button):
                                 bot = var.bot
                                 with open(var.path, "r", encoding="utf-8") as f:
@@ -448,7 +520,8 @@ class vac(commands.Cog):
                                                         custom_id=f"{interaction.user.id}<!>{select.values[0]}",
                                                         disabled=not data[str(interaction.user.id)][select.values[0]]["in_use"])
                                     async def start_button_callback(self, interaction: discord.Interaction, button:discord.Button):
-                                        await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
+                                        pass
+                                        """await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
 
                                         user_answers = []
                                         with open(var.path, "r", encoding='utf-8') as f:
@@ -463,7 +536,7 @@ class vac(commands.Cog):
                                                 break
                                             try:
                                                 response = await bot.wait_for('message', check=lambda
-                                                    m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=300)
+                                                    m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=200)
 
                                                 if response.content:
                                                     print(response.content, "content")
@@ -504,7 +577,7 @@ class vac(commands.Cog):
                                         embed.description+=f"Пользователь: {interaction.user.mention} \n"
                                         embed.description+=f"Категория: `{dats[1]}` \n{ans}"
                                         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
-                                        await out_chan.send(embed=embed)
+                                        await out_chan.send(embed=embed)"""
 
                                 emb = discord.Embed(title=f"{select.values[0]}", description=self.data[str(interaction.user.id)][select.values[0]]["description"])
                                 if channel != None:
@@ -605,7 +678,7 @@ class vac(commands.Cog):
             await ctx.response.send_message("У вас нет роли шефа. Если вы шеф, обратитесь к сисам", ephemeral=True)
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(vac(bot), guilds=bot.guilds)
-    var.bot = bot
+    await bot.add_cog(vac(bot))
+    # var.bot = bot
     loader = var(bot)
     await loader.load_messages()
