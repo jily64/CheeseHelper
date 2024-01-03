@@ -107,6 +107,7 @@ class vac(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         var.bot = self.bot
+        self.users_in_progress = []
         with open(var.path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
@@ -118,6 +119,12 @@ class vac(commands.Cog):
         c_id = interaction.data["custom_id"]
 
         if "<!>" in c_id:
+
+            if interaction.user.id in self.users_in_progress:
+                await interaction.response.send_message(content="Вы уже отвечаете на вопросы. Завершите опрос.", ephemeral=True)
+                return
+
+            self.users_in_progress.append(interaction.user.id)
             await interaction.response.send_message(content="Проверьте лс.", ephemeral=True)
 
             user_answers = []
@@ -135,20 +142,21 @@ class vac(commands.Cog):
                     break
                 try:
                     response = await self.bot.wait_for('message', check=lambda
-                        m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=300)
+                        m: m.author == interaction.user and m.channel.id == interaction.user.dm_channel.id, timeout=10)
 
                     if response.content:
                         print(response.content, "content")
                         user_answers.append(response.content)
                     else:
-                        await interaction.user.send(
-                            f"Файлы, голосовые и картинки не принимаются. \nТеперь перепроходи все заново)")
+                        await interaction.user.send(f"Файлы, голосовые и картинки не принимаются. \nТеперь перепроходи все заново)")
+                        self.users_in_progress.remove(interaction.user.id)
                         return
 
                 except asyncio.TimeoutError:
                     await interaction.user.send(f"Время на вопрос вышло.")
+                    self.users_in_progress.remove(interaction.user.id)
                     return
-
+            self.users_in_progress.remove(interaction.user.id)
             await interaction.user.send(f"Спасибо за подачу заявки! В скором времени она будет рассмотрена.")
 
             user = interaction.guild.get_member(int(dats[0]))
